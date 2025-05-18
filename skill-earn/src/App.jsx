@@ -12,10 +12,22 @@ export default function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
-  useEffect(() => {
-    localStorage.setItem("wallet", JSON.stringify(wallet));
-    localStorage.setItem("tasksDone", JSON.stringify(tasksDone));
-  }, [wallet, tasksDone]);
+  const [promotionRequests, setPromotionRequests] = useState(() => {
+    const saved = localStorage.getItem("promotionRequests");
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [formVisible, setFormVisible] = useState(false);
+  const [adminVisible, setAdminVisible] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    promotion: "",
+    expectations: "",
+    result: "",
+  });
 
   const tasks = [
     { id: 1, title: "Subscribe to YouTube Channel", reward: 10 },
@@ -23,11 +35,52 @@ export default function App() {
     { id: 3, title: "Like a YouTube Video", reward: 3 },
   ];
 
+  useEffect(() => {
+    localStorage.setItem("wallet", JSON.stringify(wallet));
+    localStorage.setItem("tasksDone", JSON.stringify(tasksDone));
+    localStorage.setItem("promotionRequests", JSON.stringify(promotionRequests));
+  }, [wallet, tasksDone, promotionRequests]);
+
   const completeTask = (task) => {
     if (!tasksDone.includes(task.id)) {
       setTasksDone([...tasksDone, task.id]);
       setWallet(wallet + task.reward);
     }
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const submitForm = () => {
+    const filled = Object.values(formData).every((field) => field.trim() !== "");
+    if (!filled) {
+      alert("Please fill all fields.");
+      return;
+    }
+    setPromotionRequests([...promotionRequests, formData]);
+    setFormData({
+      name: "",
+      email: "",
+      phone: "",
+      promotion: "",
+      expectations: "",
+      result: "",
+    });
+    setFormVisible(false);
+    alert("Promotion request submitted!");
+  };
+
+  const exportJSON = () => {
+    const blob = new Blob([JSON.stringify(promotionRequests, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "promotion_requests.json";
+    a.click();
   };
 
   return (
@@ -47,7 +100,11 @@ export default function App() {
                 ? "bg-purple-600 text-white shadow-lg scale-105"
                 : "bg-white text-purple-600 border border-purple-600 hover:bg-purple-100"
             }`}
-            onClick={() => setTab(item)}
+            onClick={() => {
+              setTab(item);
+              setFormVisible(false);
+              setAdminVisible(false);
+            }}
           >
             {item === "courses" ? "Courses" : item === "earn" ? "Earn" : "Sponsor"}
           </button>
@@ -106,13 +163,69 @@ export default function App() {
         {tab === "sponsor" && (
           <section>
             <h2 className="text-3xl font-semibold mb-6 text-gray-800">📣 Sponsor a Promotion</h2>
-            <div className="bg-white p-8 rounded-2xl shadow-xl max-w-xl mx-auto border border-indigo-100">
-              <p className="text-gray-700 mb-4 text-lg leading-relaxed">
-                Want to promote your YouTube channel, product, or Instagram page?
-                Use our userbase to complete real engagement tasks.
-              </p>
-              <button className="w-full px-5 py-3 bg-pink-500 text-white text-lg font-semibold rounded-xl hover:bg-pink-600 transition-all shadow">Add Promotion Request (Mock)</button>
+
+            <div className="flex gap-4 mb-6">
+              <button
+                onClick={() => setFormVisible(true)}
+                className="px-5 py-3 bg-pink-500 text-white rounded-xl hover:bg-pink-600"
+              >
+                Add Promotion Request
+              </button>
+              <button
+                onClick={() => setAdminVisible(true)}
+                className="px-5 py-3 bg-indigo-500 text-white rounded-xl hover:bg-indigo-600"
+              >
+                Admin Panel
+              </button>
             </div>
+
+            {/* Form Modal */}
+            {formVisible && (
+              <div className="bg-white p-6 rounded-xl shadow max-w-xl mx-auto space-y-4 border border-gray-200">
+                {["name", "email", "phone", "promotion", "expectations", "result"].map((field) => (
+                  <input
+                    key={field}
+                    name={field}
+                    value={formData[field]}
+                    onChange={handleFormChange}
+                    placeholder={field.replace(/^\w/, (c) => c.toUpperCase())}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                  />
+                ))}
+                <div className="flex justify-end gap-4">
+                  <button onClick={() => setFormVisible(false)} className="px-4 py-2 bg-gray-300 rounded">Cancel</button>
+                  <button onClick={submitForm} className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">Submit</button>
+                </div>
+              </div>
+            )}
+
+            {/* Admin Panel */}
+            {adminVisible && (
+              <div className="bg-white mt-8 p-6 rounded-xl shadow max-w-4xl mx-auto border border-gray-200">
+                <h3 className="text-2xl font-bold mb-4">All Promotion Requests</h3>
+                <table className="w-full border-collapse border border-gray-300 text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      {["Name", "Email", "Phone", "Promotion", "Expectations", "Result"].map((head) => (
+                        <th key={head} className="border border-gray-300 px-4 py-2">{head}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {promotionRequests.map((req, i) => (
+                      <tr key={i} className="text-center">
+                        {["name", "email", "phone", "promotion", "expectations", "result"].map((key) => (
+                          <td key={key} className="border border-gray-300 px-4 py-2">{req[key]}</td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-4 text-right">
+                  <button onClick={exportJSON} className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Export as JSON</button>
+                </div>
+              </div>
+            )}
           </section>
         )}
       </main>
