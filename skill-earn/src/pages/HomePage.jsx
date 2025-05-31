@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginModal from "../components/LoginModal.jsx";
 import { getUser, setUser, buyCourse, hasBoughtCourse } from "../utils/auth";
+import MemberCounter from "../components/MemberCounter.jsx";
+import Navbar from "../components/Navbar.jsx";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -77,10 +79,8 @@ export default function HomePage() {
         setShowLogin(false);
       }} />
 
-      <header className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-8 shadow-md">
-        <h1 className="text-4xl font-extrabold text-center tracking-wide drop-shadow-lg">SkillEarn - Demo Platform</h1>
-      </header>
-
+      <Navbar/>
+      <MemberCounter/>
       <nav className="flex justify-center space-x-4 my-8">
         {["courses", "earn", "sponsor"].map((item) => (
           <button
